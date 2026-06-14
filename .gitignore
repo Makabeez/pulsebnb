@@ -12,3 +12,5 @@ node_modules/
 contracts/.env
 .env
 contracts/.env
+*.bak
+*.bak-*
