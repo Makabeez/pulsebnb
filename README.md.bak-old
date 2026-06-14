@@ -1,0 +1,124 @@
+<div align="center">
+
+<svg width="780" height="180" viewBox="0 0 780 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0b0b"/>
+      <stop offset="100%" stop-color="#1a1300"/>
+    </linearGradient>
+    <linearGradient id="bnb" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F3BA2F"/>
+      <stop offset="100%" stop-color="#FFE08A"/>
+    </linearGradient>
+  </defs>
+  <rect width="780" height="180" fill="url(#bg)" rx="14"/>
+
+  <!-- pulse circles -->
+  <circle cx="90" cy="90" r="6" fill="#F3BA2F">
+    <animate attributeName="r" values="6;28;6" dur="2.2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0;1" dur="2.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="90" cy="90" r="6" fill="#F3BA2F"/>
+
+  <text x="160" y="78" font-family="'Courier New', monospace" font-size="44" font-weight="800" fill="url(#bnb)">
+    PulseBNB
+  </text>
+  <text x="160" y="112" font-family="'Courier New', monospace" font-size="15" fill="#bdbdbd">
+    Real-time intelligence on every contract deployed to BNB Chain.
+  </text>
+  <text x="160" y="138" font-family="'Courier New', monospace" font-size="13" fill="#7a7a7a">
+    AI-classified. On-chain proof. Built for builders.
+  </text>
+</svg>
+
+<br/>
+
+[![BNB Chain](https://img.shields.io/badge/Built_on-BNB_Chain-F3BA2F?style=for-the-badge&logo=binance&logoColor=black)](https://www.bnbchain.org)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-pulsebnb-web.vercel.app-000000?style=for-the-badge)](https://pulsebnb-web.vercel.app)
+[![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
+
+</div>
+
+---
+
+> **The problem:** 100+ contracts deploy to BNB Chain every day. Most are forks, honeypots, or dead code. The next real builder — the one VCs and airdrop hunters want to find first — is buried in the noise.
+>
+> **The wedge:** PulseBNB indexes every deployment in real time, runs each one through an AI classifier, and surfaces the real builders. No subscription, no token, no waitlist.
+
+## Why this matters
+
+| Audience | Use case |
+|---|---|
+| **Airdrop hunters** | Catch a builder's first contract before everyone else |
+| **VCs & scouts** | Filter the firehose of deployments for real signal |
+| **Builders themselves** | Reputation that follows your wallet, not your X handle |
+| **Security researchers** | Spot honeypot patterns as they propagate |
+
+## Architecture
+
+```
+┌─────────────┐    ┌──────────────────┐    ┌──────────────┐
+│ BNB RPC     │───▶│ Indexer          │───▶│ SQLite       │
+│ (block tip) │    │ (Python, port    │    │ contracts +  │
+└─────────────┘    │  daemon via PM2) │    │ deployers    │
+                   └─────┬────────────┘    └──────┬───────┘
+                         │                        │
+                         ▼                        ▼
+        ┌────────────────────────┐    ┌────────────────────┐
+        │ AI Classifier          │    │ FastAPI (port 8093)│
+        │ via LiteLLM router     │    │ /feed /leaderboard │
+        │ -> label + reason      │    │ /hot /builder/:a   │
+        └────────────────────────┘    └─────────┬──────────┘
+                                                │
+                         ┌──────────────────────┴─────────┐
+                         ▼                                ▼
+                  ┌─────────────┐                ┌────────────────┐
+                  │ Next.js UI  │                │ Watchlist.sol  │
+                  │ (Vercel)    │                │ (BNB mainnet)  │
+                  └─────────────┘                └────────────────┘
+```
+
+## Tech stack
+
+| Layer | Choice | Why |
+|---|---|---|
+| Indexer | Python 3 + APScheduler | Production-proven on Base since April 2026 (24+ days uptime, zero crashes) |
+| Data source | Etherscan V2 unified API | Single key across chains, `chainid=56` for BNB |
+| AI classifier | LiteLLM router → cheap model | Local routing, no per-call API costs |
+| Identity | Space ID + Farcaster | BNB-native + cross-chain reputation |
+| Storage | SQLite | Fast enough for the read patterns, zero ops overhead |
+| API | FastAPI on port 8093 | CORS open, ready for Vercel frontend |
+| On-chain | `Watchlist.sol` on BNB mainnet | Real third-party attestation, no fee, no token |
+
+## Local dev
+
+```bash
+git clone https://github.com/Makabeez/pulsebnb.git
+cd pulsebnb
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # add your Etherscan API key
+python indexer.py     # in one terminal
+./start-api.sh        # in another
+curl http://127.0.0.1:8093/stats
+```
+
+## Production deployment
+
+PM2 with absolute paths (WSL gotcha):
+
+```bash
+pm2 start ecosystem.config.js
+pm2 save
+```
+
+API gets fronted via Cloudflare tunnel on `pulsebnb-api.baserep.xyz`, frontend deployed on Vercel at `pulsebnb-web.vercel.app`.
+
+## Hackathon
+
+Built for **[BNB Hack: Online Edition](https://www.bnbchain.org/en/hackathons/bnb-ai-hack)**, cycle starting May 2026.
+Sponsor tracks: **ASI Alliance** (agentic AI classification), **Netmind** (decentralized inference).
+
+## License
+
+MIT — fork it, ship it, win with it.
